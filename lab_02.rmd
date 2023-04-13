@@ -1,7 +1,7 @@
 ---
 title: "Lab 02"
 subtitle: "CS3172-1, Spring 2023, Effat University"
-author: ""
+author: "Duaa Suroor"
 output: pdf_document
 ---
 
@@ -23,22 +23,36 @@ cas <- read_rds("data/canada_survey.rds")
 ## Task 1
 
 ```{r}
+cas<- filter(cas, energy_expense > 0, household_income > 0)
 ```
 
 ```{r}
+cas<- mutate(cas, marital_status = factor(marital_status))
 ```
 
 ## Task 2
 
 ```{r}
+cas<- mutate(cas, heat_equip = case_when(heat_equip == 1 ~ 'steam',
+                                         heat_equip == 2 ~ 'forced air',
+                                         heat_equip == 3 ~ 'stove',
+                                         heat_equip == 4 ~ 'electric heating'))
 ```
 
 ```{r}
+cas<- mutate(cas, heat_fuel = case_when(heat_fuel == 1 ~ 'oil',
+                                         heat_fuel == 2 ~ 'gas',
+                                         heat_fuel == 3 ~ 'electricity',
+                                         heat_fuel == 4 ~ 'other'))
 ```
 
 ## Task 3
 
 ```{r}
+cas1<- cas %>% group_by(heat_equip,heat_fuel) %>% summarise(
+  mean_ener_exp = mean(energy_expense),
+  median_ener_exp = median(energy_expense),
+  sd_ener_exp = sd(energy_expense))
 ```
 
 - Provide the answer to the theoretical questions here
@@ -46,23 +60,45 @@ cas <- read_rds("data/canada_survey.rds")
 ## Task 4
 
 ```{r}
+ggplot(cas, mapping = aes(x=heat_fuel, y=energy_expense))+
+  geom_boxplot()+
+  scale_y_continuous(labels = scales::dollar_format())+
+  facet_wrap(~ heat_equip, nrow = 2) +
+  labs(title = "energy expense vs heating type", 
+       x="heat fuel type", 
+       y="enery expense")
 ```
 
 ## Task 5
 
 ```{r}
+cas2 <- cas %>% mutate(energy_prop = energy_expense/household_income) %>%arrange(desc(energy_prop))%>%
+  slice(1,n()) %>%
+  glimpse()
 ```
 
 ## Task 6
 
 ```{r message=FALSE}
+cas %>%
+  group_by(year, province) %>%
+  summarize(median_energy_expense_per_room = median(energy_expense/rooms))%>%
+  group_by(year) %>%
+  filter(median_energy_expense_per_room == min(median_energy_expense_per_room)) %>%
+  select(year, province, median_energy_expense_per_room) %>%
+  arrange(year)
 ```
 
 ## Task 7
 
 ```{r fig.width=7, fig.height=6, message=FALSE}
+cas%>%
+  mutate(energy_prop=energy_expense/household_income,vulnerable = if_else(energy_prop>0.05,"vulnerable","not"))%>%
+  group_by(education, age)%>%
+  summarise(prop_vulnerable = mean(vulnerable == "vulnerable"))%>%
+  ungroup()%>%
+  ggplot(aes(x = education, y = age, fill = prop_vulnerable))+geom_raster()+scale_fill_gradient(low="white", high="red")+labs(x="Education", y="Age", fill="Proportion \n energy \n vulnerable")+theme_bw()
 ```
 
-## Task 8
 
 
